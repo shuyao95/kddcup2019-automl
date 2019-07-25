@@ -63,26 +63,12 @@ def clean_tables(tables):
         m_cat_cols = [c for c in df if c.startswith(CONSTANT.MULTI_CAT_PREFIX)]
         time_cols = [c for c in df if c.startswith(CONSTANT.TIME_PREFIX)]
 
-        print("num colums...")
-
-        #if len(num_cols)>3:
-        #    df = parallelize_apply(num_log_p,df,num_cols)
-        #elif len(num_cols)>0:
-        #    df = normal_apply(num_log_p,df,num_cols)
-
-        print('Category columns...')
-        # if len(cat_cols) > 3:
-        #     df = parallelize_apply(count_cat, df, cat_cols)
         if len(cat_cols) > 0:
             df = normal_apply(count_cat, df, cat_cols)
-        print('Multi category columns...')
         if len(m_cat_cols) > 3:
             df = parallelize_apply(count_m_cat, df, m_cat_cols)
         elif len(m_cat_cols) > 0:
             df = normal_apply(count_m_cat, df, m_cat_cols)
-        print('Time columns...')
-        # if len(time_cols) > 3:
-        #     df = parallelize_apply(transform_datetime, df, time_cols)
         if len(time_cols) > 0:
             df = normal_apply(transform_datetime, df, time_cols)
         # drop columns
@@ -90,7 +76,6 @@ def clean_tables(tables):
 
         compress_df(df)
         tables[tname] = df
-        # print(tname, '\n', df.info(memory_usage='deep'))
 
 @timeit
 def clean_df(df):
@@ -127,31 +112,8 @@ def df_fillna_with_mean(df):
         df[c].fillna("0", inplace=True)
 
 
-def num_log_p(df,num_cols):
-    op = "log"
-    eps = 1e-8
-    prefix = CONSTANT.NUMERICAL_PREFIX
-    new_df = pd.DataFrame()
-    for c in num_cols:
-        n_min = df[c].min()
-        new_df[f"{prefix}{op.upper()}({c})"] = df[c].apply(lambda x: np.log(x-n_min+eps))
-    return new_df
-
-@timeit
-def num_log(df):
-    op = "log"
-    eps = 1e-8
-    prefix = CONSTANT.NUMERICAL_PREFIX
-    num_cols = [c for c in df if c.startswith(CONSTANT.NUMERICAL_PREFIX)]
-    for c in num_cols:
-        n_min = df[c].min()
-        df[f"{prefix}{op.upper()}({c})"] = df[c].apply(lambda x: np.log(x-n_min+eps))
-
-
 @timeit
 def feature_engineer(df, config):
-   # print(df.info(memory_usage='deep'))
-   #num_log(df)
    return df
 
 
@@ -199,15 +161,6 @@ def count_m_cat(df,m_cat_cols):
     return new_df
 
 
-def count_m_cat_merge(df,m_cat_cols):
-    prefix_c = CONSTANT.CATEGORY_PREFIX
-    op_f = 'frequent_cat'
-    new_df=pd.DataFrame()
-    for c in m_cat_cols:
-        new_df[f"{prefix_c}{op_f.upper()}RANK(1)({c})"] = df[c].apply(frequent_cat)
-    return new_df
-
-
 def transform_datetime(df, time_cols):
     prefix_n = CONSTANT.NUMERICAL_PREFIX
     ops = uni_ops[CONSTANT.TIME_PREFIX]
@@ -218,29 +171,4 @@ def transform_datetime(df, time_cols):
         new_dfs += [new_df]
     return pd.concat(new_dfs, axis=1)
 
-
-# @timeit
-# def transform_categorical_hash(df):
-#     for c in [c for c in df if c.startswith(CONSTANT.CATEGORY_PREFIX)]:
-#         df[c] = df[c].apply(lambda x: int(x))
-
-#     for c in [c for c in df if c.startswith(CONSTANT.MULTI_CAT_PREFIX)]:
-#         df.drop(c, axis=1, inplace=True)
-
-
-# # @timeit
-# def rational_feature(df, col, windows=1):
-#     if col.startswith(CONSTANT.NUMERICAL_PREFIX):
-#         prefix = CONSTANT.NUMERICAL_PREFIX
-#     elif col.startswith(CONSTANT.CATEGORY_PREFIX):
-#         prefix = CONSTANT.CATEGORY_PREFIX
-#     elif col.startswith(CONSTANT.MULTI_CAT_PREFIX):
-#         prefix = CONSTANT.MULTI_CAT_PREFIX
-#     else:
-#         prefix = CONSTANT.TIME_PREFIX
-#     data = df[col].values
-#     new_data = [np.concatenate([np.repeat(data[0], i + 1), data[(i + 1):]]) for i in range(windows)]
-#     new_data = np.stack(new_data, axis=1)
-#     new_df = pd.DataFrame(new_data, columns=[f"{prefix}PREV_{i+1}({col})" for i in range(windows)]).astype(df[col].dtypes)
-#     return pd.concat([df, new_df], axis=1)
 

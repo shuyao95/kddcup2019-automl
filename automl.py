@@ -128,9 +128,6 @@ def data_sample(X: pd.DataFrame, y: pd.Series, nrows: int=5000):
 
 @timeit
 def timetrain(X: pd.DataFrame, y: pd.Series, config: Config,Time_info):
-    #baseline
-    #train_lightgbm(X, y, config)
-    #leave for prediction
 
     time_limitation_for_hp= Time_info['time_ramain_so_far']-Time_info['For_safe']
 
